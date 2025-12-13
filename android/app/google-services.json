@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "653503408758",
+    "project_id": "mafiagame-2ab8d",
+    "storage_bucket": "mafiagame-2ab8d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:653503408758:android:640ceb240fb90c03624d57",
+        "android_client_info": {
+          "package_name": "om.casinomafia.casino_mafia_rpg"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOwV072MZ6_ur1VuvT7pL1_cQ7Y7QOQdU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
