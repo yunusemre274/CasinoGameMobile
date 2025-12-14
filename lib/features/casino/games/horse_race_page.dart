@@ -175,6 +175,7 @@ class _HorseRacePageState extends ConsumerState<HorseRacePage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         leading: IconButton(
@@ -203,9 +204,10 @@ class _HorseRacePageState extends ConsumerState<HorseRacePage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
           children: [
             // Bet amount selector
             BetSelector(
@@ -566,6 +568,7 @@ class _HorseRacePageState extends ConsumerState<HorseRacePage> {
               ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -17,14 +17,24 @@ class DevSimulationPage extends ConsumerStatefulWidget {
 }
 
 class _DevSimulationPageState extends ConsumerState<DevSimulationPage> {
-  final CasinoSimulationService _simulationService = CasinoSimulationService();
+  late CasinoSimulationService _simulationService;
 
-  int _numSimulations = 10000;
+  int _numSimulations =
+      CasinoSimulationService.defaultSimulations; // 100K default
   bool _isRunning = false;
   List<SimulationResult> _results = [];
-  String _statusMessage = 'Ready to run simulations';
+  String _statusMessage =
+      'Ready to run simulations (100K recommended for accuracy)';
 
-  final List<int> _simulationPresets = [1000, 5000, 10000, 50000, 100000];
+  // Updated presets with higher minimum for statistical significance
+  final List<int> _simulationPresets = [10000, 50000, 100000, 500000, 1000000];
+
+  @override
+  void initState() {
+    super.initState();
+    // Create simulation service with unique seed
+    _simulationService = CasinoSimulationService();
+  }
 
   Future<void> _runAllSimulations() async {
     if (_isRunning) return;
@@ -388,6 +398,19 @@ class _ResultCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPass = result.withinTolerance;
 
+    // Risk level color
+    Color riskColor;
+    switch (result.riskLevel) {
+      case 'LOW':
+        riskColor = AppColors.success;
+      case 'MEDIUM':
+        riskColor = AppColors.info;
+      case 'HIGH':
+        riskColor = AppColors.warning;
+      default:
+        riskColor = AppColors.danger;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -402,15 +425,18 @@ class _ResultCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                result.gameName,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              Expanded(
+                child: Text(
+                  result.gameName,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
               Container(
@@ -433,35 +459,226 @@ class _ResultCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+
+          // RTP Section Header
+          Text(
+            'RTP (Expected Value)',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
           Row(
             children: [
               Expanded(
                 child: _StatColumn(
-                  label: 'Observed RTP',
+                  label: 'Observed',
                   value: '${(result.observedRtp * 100).toStringAsFixed(2)}%',
                 ),
               ),
               Expanded(
                 child: _StatColumn(
-                  label: 'Expected RTP',
+                  label: 'Expected',
                   value: '${(result.theoreticalRtp * 100).toStringAsFixed(2)}%',
                 ),
               ),
               Expanded(
                 child: _StatColumn(
-                  label: 'Difference',
-                  value: '${(result.rtpDifference * 100).toStringAsFixed(2)}%',
+                  label:
+                      'Diff (±${(result.expectedTolerance * 100).toStringAsFixed(2)}%)',
+                  value: '${(result.rtpDifference * 100).toStringAsFixed(3)}%',
                   color: isPass ? AppColors.success : AppColors.warning,
                 ),
               ),
             ],
           ),
+
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: riskColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: riskColor.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'VARIANCE (Risk Indicators)',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: riskColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        result.riskLevel,
+                        style: TextStyle(
+                          color: riskColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatColumn(
+                        label: 'Hit Rate',
+                        value: '${(result.hitRate * 100).toStringAsFixed(1)}%',
+                        fontSize: 12,
+                      ),
+                    ),
+                    Expanded(
+                      child: _StatColumn(
+                        label: 'Avg Win',
+                        value: '${result.avgWinAmount.toStringAsFixed(2)}x',
+                        fontSize: 12,
+                      ),
+                    ),
+                    Expanded(
+                      child: _StatColumn(
+                        label: 'Std Dev',
+                        value: result.stdDeviation.toStringAsFixed(3),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatColumn(
+                        label: 'Max Drawdown',
+                        value: '-${result.maxDrawdown.toStringAsFixed(0)}',
+                        fontSize: 12,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                    Expanded(
+                      child: _StatColumn(
+                        label: 'Loss Streak',
+                        value: '${result.longestLosingStreak}',
+                        fontSize: 12,
+                      ),
+                    ),
+                    Expanded(
+                      child: _StatColumn(
+                        label: 'Win Streak',
+                        value: '${result.longestWinningStreak}',
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 8),
+          // Outcome distribution
+          Row(
+            children: [
+              _OutcomeBadge(
+                label: 'W',
+                value: result.totalWins,
+                total: result.numSimulations,
+                color: AppColors.success,
+              ),
+              const SizedBox(width: 8),
+              _OutcomeBadge(
+                label: 'L',
+                value: result.totalLosses,
+                total: result.numSimulations,
+                color: AppColors.danger,
+              ),
+              if (result.totalPushes > 0) ...[
+                const SizedBox(width: 8),
+                _OutcomeBadge(
+                  label: 'P',
+                  value: result.totalPushes,
+                  total: result.numSimulations,
+                  color: AppColors.textMuted,
+                ),
+              ],
+              const Spacer(),
+              Text(
+                'Net: ${result.netProfit >= 0 ? '+' : ''}${result.netProfit.toStringAsFixed(0)}',
+                style: TextStyle(
+                  color: result.netProfit >= 0
+                      ? AppColors.success
+                      : AppColors.danger,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           Text(
-            'Simulations: ${result.numSimulations} | Time: ${result.elapsed.inMilliseconds}ms',
+            '${_formatNumber(result.numSimulations)} simulations | ${result.elapsed.inMilliseconds}ms',
             style: TextStyle(color: AppColors.textMuted, fontSize: 10),
           ),
         ],
+      ),
+    );
+  }
+
+  String _formatNumber(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)}K';
+    return n.toString();
+  }
+}
+
+class _OutcomeBadge extends StatelessWidget {
+  final String label;
+  final int value;
+  final int total;
+  final Color color;
+
+  const _OutcomeBadge({
+    required this.label,
+    required this.value,
+    required this.total,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (value / total * 100).toStringAsFixed(0);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        '$label: $pct%',
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -471,8 +688,14 @@ class _StatColumn extends StatelessWidget {
   final String label;
   final String value;
   final Color? color;
+  final double fontSize;
 
-  const _StatColumn({required this.label, required this.value, this.color});
+  const _StatColumn({
+    required this.label,
+    required this.value,
+    this.color,
+    this.fontSize = 14,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -486,7 +709,7 @@ class _StatColumn extends StatelessWidget {
           style: TextStyle(
             color: color ?? AppColors.textPrimary,
             fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontSize: fontSize,
           ),
         ),
       ],

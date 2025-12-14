@@ -224,6 +224,7 @@ class _BlackjackPageState extends ConsumerState<BlackjackPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         leading: IconButton(
@@ -251,295 +252,301 @@ class _BlackjackPageState extends ConsumerState<BlackjackPage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Bet amount selector (only when not in game)
-            if (!_gameInProgress && !_showResult)
-              BetSelector(
-                presets: _betPresets,
-                currentBet: _betAmount,
-                playerMoney: gameState.money,
-                isDisabled: _gameInProgress,
-                onSelect: _selectBetAmount,
-              ),
-
-            if (!_gameInProgress && !_showResult) const SizedBox(height: 16),
-
-            // Dealer area
-            GameArea(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Dealer',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                        ),
-                      ),
-                      if (_dealerHand.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            _playerStand || _showResult
-                                ? '$dealerValue'
-                                : '${_dealerHand.first.value}+?',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 100,
-                    child: _dealerHand.isEmpty
-                        ? Center(
-                            child: Text(
-                              'Place bet to start',
-                              style: TextStyle(color: AppColors.textMuted),
-                            ),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              for (int i = 0; i < _dealerHand.length; i++)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: _CardWidget(
-                                    card: _dealerHand[i],
-                                    faceDown:
-                                        i == 1 && !_playerStand && !_showResult,
-                                  ),
-                                ),
-                            ],
-                          ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Game table
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0D5C36), // Casino green
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.5),
-                    width: 3,
-                  ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Bet amount selector (only when not in game)
+              if (!_gameInProgress && !_showResult)
+                BetSelector(
+                  presets: _betPresets,
+                  currentBet: _betAmount,
+                  playerMoney: gameState.money,
+                  isDisabled: _gameInProgress,
+                  onSelect: _selectBetAmount,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'BLACKJACK PAYS 3:2',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
 
-                    // Result message
-                    if (_showResult)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
+              if (!_gameInProgress && !_showResult) const SizedBox(height: 16),
+
+              // Dealer area
+              GameArea(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Dealer',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color: _winAmount > 0
-                              ? AppColors.success.withValues(alpha: 0.9)
-                              : AppColors.danger.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              _resultMessage,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
+                        if (_dealerHand.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceLight,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _playerStand || _showResult
+                                  ? '$dealerValue'
+                                  : '${_dealerHand.first.value}+?',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            if (_winAmount > 0) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                _winAmount > _betAmount
-                                    ? '+\$$_winAmount'
-                                    : 'Bet returned',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontSize: 16,
-                                ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 100,
+                      child: _dealerHand.isEmpty
+                          ? Center(
+                              child: Text(
+                                'Place bet to start',
+                                style: TextStyle(color: AppColors.textMuted),
                               ),
-                            ],
-                          ],
-                        ),
-                      )
-                    else if (_gameInProgress)
-                      Text(
-                        _playerStand ? 'Dealer is playing...' : 'Hit or Stand?',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 16,
-                        ),
-                      )
-                    else
-                      Text(
-                        'Place your bet!',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 16,
-                        ),
-                      ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                for (int i = 0; i < _dealerHand.length; i++)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: _CardWidget(
+                                      card: _dealerHand[i],
+                                      faceDown:
+                                          i == 1 &&
+                                          !_playerStand &&
+                                          !_showResult,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                    ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Player area
-            GameArea(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Game table
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D5C36), // Casino green
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.success.withValues(alpha: 0.5),
+                      width: 3,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Your Hand',
+                        'BLACKJACK PAYS 3:2',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: Colors.white.withValues(alpha: 0.3),
                           fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
                         ),
                       ),
-                      if (_playerHand.isNotEmpty)
+                      const SizedBox(height: 24),
+
+                      // Result message
+                      if (_showResult)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
+                            horizontal: 32,
+                            vertical: 16,
                           ),
                           decoration: BoxDecoration(
-                            color: playerValue > 21
-                                ? AppColors.danger.withValues(alpha: 0.2)
-                                : playerValue == 21
-                                ? AppColors.success.withValues(alpha: 0.2)
-                                : AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: playerValue > 21
-                                  ? AppColors.danger
-                                  : playerValue == 21
-                                  ? AppColors.success
-                                  : Colors.transparent,
-                            ),
+                            color: _winAmount > 0
+                                ? AppColors.success.withValues(alpha: 0.9)
+                                : AppColors.danger.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Text(
-                            '$playerValue',
-                            style: TextStyle(
-                              color: playerValue > 21
-                                  ? AppColors.danger
-                                  : playerValue == 21
-                                  ? AppColors.success
-                                  : AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Column(
+                            children: [
+                              Text(
+                                _resultMessage,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (_winAmount > 0) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _winAmount > _betAmount
+                                      ? '+\$$_winAmount'
+                                      : 'Bet returned',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        )
+                      else if (_gameInProgress)
+                        Text(
+                          _playerStand
+                              ? 'Dealer is playing...'
+                              : 'Hit or Stand?',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 16,
+                          ),
+                        )
+                      else
+                        Text(
+                          'Place your bet!',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            fontSize: 16,
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 100,
-                    child: _playerHand.isEmpty
-                        ? Center(
-                            child: Text(
-                              'Your cards will appear here',
-                              style: TextStyle(color: AppColors.textMuted),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Player area
+              GameArea(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Your Hand',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (_playerHand.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
                             ),
-                          )
-                        : SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                for (final card in _playerHand)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: _CardWidget(card: card),
-                                  ),
-                              ],
+                            decoration: BoxDecoration(
+                              color: playerValue > 21
+                                  ? AppColors.danger.withValues(alpha: 0.2)
+                                  : playerValue == 21
+                                  ? AppColors.success.withValues(alpha: 0.2)
+                                  : AppColors.surfaceLight,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: playerValue > 21
+                                    ? AppColors.danger
+                                    : playerValue == 21
+                                    ? AppColors.success
+                                    : Colors.transparent,
+                              ),
+                            ),
+                            child: Text(
+                              '$playerValue',
+                              style: TextStyle(
+                                color: playerValue > 21
+                                    ? AppColors.danger
+                                    : playerValue == 21
+                                    ? AppColors.success
+                                    : AppColors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 100,
+                      child: _playerHand.isEmpty
+                          ? Center(
+                              child: Text(
+                                'Your cards will appear here',
+                                style: TextStyle(color: AppColors.textMuted),
+                              ),
+                            )
+                          : SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  for (final card in _playerHand)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: _CardWidget(card: card),
+                                    ),
+                                ],
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Action buttons
-            if (_showResult)
-              GameButton(
-                text: 'PLAY AGAIN',
-                icon: Icons.replay,
-                color: AppColors.info,
-                onPressed: _playAgain,
-              )
-            else if (_gameInProgress)
-              Row(
-                children: [
-                  Expanded(
-                    child: GameButton(
-                      text: 'HIT',
-                      icon: Icons.add_card,
-                      color: AppColors.info,
-                      enabled: !_playerStand,
-                      onPressed: _hit,
+              // Action buttons
+              if (_showResult)
+                GameButton(
+                  text: 'PLAY AGAIN',
+                  icon: Icons.replay,
+                  color: AppColors.info,
+                  onPressed: _playAgain,
+                )
+              else if (_gameInProgress)
+                Row(
+                  children: [
+                    Expanded(
+                      child: GameButton(
+                        text: 'HIT',
+                        icon: Icons.add_card,
+                        color: AppColors.info,
+                        enabled: !_playerStand,
+                        onPressed: _hit,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: GameButton(
-                      text: 'STAND',
-                      icon: Icons.front_hand,
-                      color: AppColors.warning,
-                      enabled: !_playerStand,
-                      onPressed: _stand,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: GameButton(
+                        text: 'STAND',
+                        icon: Icons.front_hand,
+                        color: AppColors.warning,
+                        enabled: !_playerStand,
+                        onPressed: _stand,
+                      ),
                     ),
-                  ),
-                ],
-              )
-            else
-              GameButton(
-                text: 'DEAL',
-                icon: Icons.play_arrow,
-                color: AppColors.success,
-                enabled: canPlay,
-                onPressed: _startGame,
-              ),
-          ],
+                  ],
+                )
+              else
+                GameButton(
+                  text: 'DEAL',
+                  icon: Icons.play_arrow,
+                  color: AppColors.success,
+                  enabled: canPlay,
+                  onPressed: _startGame,
+                ),
+            ],
+          ),
         ),
       ),
     );

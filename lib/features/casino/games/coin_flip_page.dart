@@ -184,6 +184,7 @@ class _CoinFlipPageState extends ConsumerState<CoinFlipPage>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         leading: IconButton(
@@ -211,251 +212,254 @@ class _CoinFlipPageState extends ConsumerState<CoinFlipPage>
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Bet amount selector
-            BetSelector(
-              presets: _betPresets,
-              currentBet: _betAmount,
-              playerMoney: gameState.money,
-              isDisabled: _isFlipping || _inAnticipation,
-              onSelect: _selectBet,
-            ),
-            const SizedBox(height: 16),
-
-            // Coin area
-            Expanded(
-              child: GameArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Animated coin with anticipation
-                    AnimatedBuilder(
-                      animation: Listenable.merge([
-                        _flipAnimation,
-                        _anticipationAnimation,
-                      ]),
-                      builder: (context, child) {
-                        // Calculate total rotation with anticipation
-                        double rotation = _flipAnimation.value;
-                        if (_inAnticipation ||
-                            _anticipationController.isAnimating) {
-                          rotation = 6 * pi + _anticipationAnimation.value;
-                        }
-
-                        // Determine which face to show
-                        final normalizedRotation = (rotation / pi) % 2;
-                        final showHeads = normalizedRotation < 1;
-                        final coinFace = _showResult
-                            ? (_result == CoinSide.heads)
-                            : (showHeads || (!_isFlipping && !_inAnticipation));
-
-                        // Coin scale based on rotation
-                        final scale = (cos(rotation) * 0.3).abs() + 0.7;
-
-                        return Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.002)
-                            ..rotateX(rotation)
-                            ..scale(scale, 1.0, 1.0),
-                          child: Container(
-                            width: 160,
-                            height: 160,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                center: const Alignment(-0.3, -0.3),
-                                radius: 1.2,
-                                colors: coinFace
-                                    ? [
-                                        const Color(0xFFFFE066),
-                                        const Color(0xFFFFD700),
-                                        const Color(0xFFDAA520),
-                                        const Color(0xFFB8860B),
-                                      ]
-                                    : [
-                                        const Color(0xFFE8E8E8),
-                                        const Color(0xFFC0C0C0),
-                                        const Color(0xFFA0A0A0),
-                                        const Color(0xFF808080),
-                                      ],
-                                stops: const [0.0, 0.3, 0.7, 1.0],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      (coinFace
-                                              ? const Color(0xFFFFD700)
-                                              : const Color(0xFFC0C0C0))
-                                          .withValues(alpha: 0.5),
-                                  blurRadius: _isFlipping ? 30 : 20,
-                                  spreadRadius: _isFlipping ? 5 : 2,
-                                ),
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                              border: Border.all(
-                                color: coinFace
-                                    ? const Color(0xFFB8860B)
-                                    : const Color(0xFF808080),
-                                width: 4,
-                              ),
-                            ),
-                            child: Center(
-                              child: _showResult
-                                  ? TweenAnimationBuilder<double>(
-                                      tween: Tween(begin: 0.5, end: 1.0),
-                                      duration: const Duration(
-                                        milliseconds: 300,
-                                      ),
-                                      curve: Curves.elasticOut,
-                                      builder: (context, iconScale, _) {
-                                        return Transform.scale(
-                                          scale: iconScale,
-                                          child: Text(
-                                            _result == CoinSide.heads
-                                                ? '👑'
-                                                : '🦅',
-                                            style: const TextStyle(
-                                              fontSize: 72,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    )
-                                  : Text(
-                                      '?',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.8,
-                                        ),
-                                        fontSize: 64,
-                                        fontWeight: FontWeight.bold,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.3,
-                                            ),
-                                            offset: const Offset(2, 2),
-                                            blurRadius: 4,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Result message using new ResultCard
-                    if (_showResult) ...[
-                      ResultCard(
-                        isWin: isWin,
-                        title: isWin ? 'YOU WIN!' : 'YOU LOSE',
-                        amount: isWin
-                            ? '+\$${_flipResult!.payout}'
-                            : '-\$$_betAmount',
-                        subtitle: _result == CoinSide.heads
-                            ? 'It landed on HEADS'
-                            : 'It landed on TAILS',
-                        onPlayAgain: _playAgain,
-                      ),
-                    ] else ...[
-                      // Instruction text
-                      Column(
-                        children: [
-                          Icon(
-                            _playerChoice == null
-                                ? Icons.touch_app_rounded
-                                : Icons.swipe_up_rounded,
-                            color: AppColors.textMuted,
-                            size: 32,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _playerChoice == null
-                                ? 'Choose your side below'
-                                : 'Ready to flip!',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 16,
-                            ),
-                          ),
-                          if (_playerChoice != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              'You chose ${_playerChoice == CoinSide.heads ? 'HEADS 👑' : 'TAILS 🦅'}',
-                              style: TextStyle(
-                                color: _playerChoice == CoinSide.heads
-                                    ? AppColors.warning
-                                    : AppColors.info,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Bet amount selector
+              BetSelector(
+                presets: _betPresets,
+                currentBet: _betAmount,
+                playerMoney: gameState.money,
+                isDisabled: _isFlipping || _inAnticipation,
+                onSelect: _selectBet,
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-            // Choice buttons using SelectionChip
-            if (!_showResult) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: SelectionChip(
-                      label: 'HEADS',
-                      emoji: '👑',
-                      isSelected: _playerChoice == CoinSide.heads,
-                      isDisabled: _isFlipping,
-                      selectedColor: AppColors.warning,
-                      onTap: () => _selectChoice(CoinSide.heads),
-                    ),
+              // Coin area
+              Expanded(
+                child: GameArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Animated coin with anticipation
+                      AnimatedBuilder(
+                        animation: Listenable.merge([
+                          _flipAnimation,
+                          _anticipationAnimation,
+                        ]),
+                        builder: (context, child) {
+                          // Calculate total rotation with anticipation
+                          double rotation = _flipAnimation.value;
+                          if (_inAnticipation ||
+                              _anticipationController.isAnimating) {
+                            rotation = 6 * pi + _anticipationAnimation.value;
+                          }
+
+                          // Determine which face to show
+                          final normalizedRotation = (rotation / pi) % 2;
+                          final showHeads = normalizedRotation < 1;
+                          final coinFace = _showResult
+                              ? (_result == CoinSide.heads)
+                              : (showHeads ||
+                                    (!_isFlipping && !_inAnticipation));
+
+                          // Coin scale based on rotation
+                          final scale = (cos(rotation) * 0.3).abs() + 0.7;
+
+                          return Transform(
+                            alignment: Alignment.center,
+                            transform: Matrix4.identity()
+                              ..setEntry(3, 2, 0.002)
+                              ..rotateX(rotation)
+                              ..scale(scale, 1.0, 1.0),
+                            child: Container(
+                              width: 160,
+                              height: 160,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  center: const Alignment(-0.3, -0.3),
+                                  radius: 1.2,
+                                  colors: coinFace
+                                      ? [
+                                          const Color(0xFFFFE066),
+                                          const Color(0xFFFFD700),
+                                          const Color(0xFFDAA520),
+                                          const Color(0xFFB8860B),
+                                        ]
+                                      : [
+                                          const Color(0xFFE8E8E8),
+                                          const Color(0xFFC0C0C0),
+                                          const Color(0xFFA0A0A0),
+                                          const Color(0xFF808080),
+                                        ],
+                                  stops: const [0.0, 0.3, 0.7, 1.0],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color:
+                                        (coinFace
+                                                ? const Color(0xFFFFD700)
+                                                : const Color(0xFFC0C0C0))
+                                            .withValues(alpha: 0.5),
+                                    blurRadius: _isFlipping ? 30 : 20,
+                                    spreadRadius: _isFlipping ? 5 : 2,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                                border: Border.all(
+                                  color: coinFace
+                                      ? const Color(0xFFB8860B)
+                                      : const Color(0xFF808080),
+                                  width: 4,
+                                ),
+                              ),
+                              child: Center(
+                                child: _showResult
+                                    ? TweenAnimationBuilder<double>(
+                                        tween: Tween(begin: 0.5, end: 1.0),
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        curve: Curves.elasticOut,
+                                        builder: (context, iconScale, _) {
+                                          return Transform.scale(
+                                            scale: iconScale,
+                                            child: Text(
+                                              _result == CoinSide.heads
+                                                  ? '👑'
+                                                  : '🦅',
+                                              style: const TextStyle(
+                                                fontSize: 72,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : Text(
+                                        '?',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.8,
+                                          ),
+                                          fontSize: 64,
+                                          fontWeight: FontWeight.bold,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                              offset: const Offset(2, 2),
+                                              blurRadius: 4,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Result message using new ResultCard
+                      if (_showResult) ...[
+                        ResultCard(
+                          isWin: isWin,
+                          title: isWin ? 'YOU WIN!' : 'YOU LOSE',
+                          amount: isWin
+                              ? '+\$${_flipResult!.payout}'
+                              : '-\$$_betAmount',
+                          subtitle: _result == CoinSide.heads
+                              ? 'It landed on HEADS'
+                              : 'It landed on TAILS',
+                          onPlayAgain: _playAgain,
+                        ),
+                      ] else ...[
+                        // Instruction text
+                        Column(
+                          children: [
+                            Icon(
+                              _playerChoice == null
+                                  ? Icons.touch_app_rounded
+                                  : Icons.swipe_up_rounded,
+                              color: AppColors.textMuted,
+                              size: 32,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _playerChoice == null
+                                  ? 'Choose your side below'
+                                  : 'Ready to flip!',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (_playerChoice != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'You chose ${_playerChoice == CoinSide.heads ? 'HEADS 👑' : 'TAILS 🦅'}',
+                                style: TextStyle(
+                                  color: _playerChoice == CoinSide.heads
+                                      ? AppColors.warning
+                                      : AppColors.info,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: SelectionChip(
-                      label: 'TAILS',
-                      emoji: '🦅',
-                      isSelected: _playerChoice == CoinSide.tails,
-                      isDisabled: _isFlipping,
-                      selectedColor: AppColors.info,
-                      onTap: () => _selectChoice(CoinSide.tails),
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 20),
 
-              // Flip button using GameButton
-              GameButton(
-                text: _isFlipping ? 'FLIPPING...' : 'FLIP COIN',
-                emoji: '🎲',
-                color: AppColors.success,
-                enabled: canPlay,
-                isLoading: _isFlipping,
-                disabledReason: _playerChoice == null
-                    ? 'Select HEADS or TAILS first'
-                    : (gameState.money < _betAmount
-                          ? 'Not enough money'
-                          : null),
-                onPressed: _flipCoin,
-              ),
+              // Choice buttons using SelectionChip
+              if (!_showResult) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: SelectionChip(
+                        label: 'HEADS',
+                        emoji: '👑',
+                        isSelected: _playerChoice == CoinSide.heads,
+                        isDisabled: _isFlipping,
+                        selectedColor: AppColors.warning,
+                        onTap: () => _selectChoice(CoinSide.heads),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: SelectionChip(
+                        label: 'TAILS',
+                        emoji: '🦅',
+                        isSelected: _playerChoice == CoinSide.tails,
+                        isDisabled: _isFlipping,
+                        selectedColor: AppColors.info,
+                        onTap: () => _selectChoice(CoinSide.tails),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Flip button using GameButton
+                GameButton(
+                  text: _isFlipping ? 'FLIPPING...' : 'FLIP COIN',
+                  emoji: '🎲',
+                  color: AppColors.success,
+                  enabled: canPlay,
+                  isLoading: _isFlipping,
+                  disabledReason: _playerChoice == null
+                      ? 'Select HEADS or TAILS first'
+                      : (gameState.money < _betAmount
+                            ? 'Not enough money'
+                            : null),
+                  onPressed: _flipCoin,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

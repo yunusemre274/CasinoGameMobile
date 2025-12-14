@@ -193,6 +193,7 @@ class _AviatorPageState extends ConsumerState<AviatorPage>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         leading: IconButton(
@@ -221,325 +222,333 @@ class _AviatorPageState extends ConsumerState<AviatorPage>
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Bet amount selector (only when not flying)
-            if (!_isFlying && !_showResult)
-              BetSelector(
-                presets: _betPresets,
-                currentBet: _betAmount,
-                playerMoney: gameState.money,
-                isDisabled: _isFlying,
-                onSelect: _selectBetAmount,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Bet amount selector (only when not flying)
+              if (!_isFlying && !_showResult)
+                BetSelector(
+                  presets: _betPresets,
+                  currentBet: _betAmount,
+                  playerMoney: gameState.money,
+                  isDisabled: _isFlying,
+                  onSelect: _selectBetAmount,
+                ),
+
+              if (!_isFlying && !_showResult) const SizedBox(height: 16),
+
+              // Multiplier display using new widget
+              MultiplierDisplay(
+                multiplier: _multiplier,
+                hasCrashed: _hasCrashed,
+                hasCashedOut: _hasCashedOut,
               ),
+              const SizedBox(height: 8),
 
-            if (!_isFlying && !_showResult) const SizedBox(height: 16),
-
-            // Multiplier display using new widget
-            MultiplierDisplay(
-              multiplier: _multiplier,
-              hasCrashed: _hasCrashed,
-              hasCashedOut: _hasCashedOut,
-            ),
-            const SizedBox(height: 8),
-
-            if (_isFlying)
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.8, end: 1.0),
-                duration: const Duration(milliseconds: 200),
-                builder: (context, scale, child) {
-                  return Transform.scale(
-                    scale: scale,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.money.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.money.withValues(alpha: 0.5),
+              if (_isFlying)
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.8, end: 1.0),
+                  duration: const Duration(milliseconds: 200),
+                  builder: (context, scale, child) {
+                    return Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.money.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.money.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Text(
+                          'Potential: \$$potentialWin',
+                          style: TextStyle(
+                            color: AppColors.money,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      child: Text(
-                        'Potential: \$$potentialWin',
-                        style: TextStyle(
-                          color: AppColors.money,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                    );
+                  },
+                ),
+
+              const SizedBox(height: 16),
+
+              // Flight area
+              Expanded(
+                child: GameArea(
+                  padding: EdgeInsets.zero,
+                  child: Stack(
+                    children: [
+                      // Grid lines
+                      CustomPaint(size: Size.infinite, painter: _GridPainter()),
+
+                      // Flight path
+                      if (_flightPath.isNotEmpty)
+                        CustomPaint(
+                          size: Size.infinite,
+                          painter: _FlightPathPainter(
+                            points: _flightPath,
+                            color: _hasCrashed
+                                ? AppColors.danger
+                                : AppColors.success,
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
 
-            const SizedBox(height: 16),
+                      // Airplane with enhanced animation
+                      AnimatedBuilder(
+                        animation: _planeController,
+                        builder: (context, child) {
+                          final wobble = _isFlying
+                              ? sin(_planeController.value * 2 * pi) * 4
+                              : 0.0;
 
-            // Flight area
-            Expanded(
-              child: GameArea(
-                padding: EdgeInsets.zero,
-                child: Stack(
-                  children: [
-                    // Grid lines
-                    CustomPaint(size: Size.infinite, painter: _GridPainter()),
+                          // Pulse scale for flying state
+                          final pulseScale = _isFlying
+                              ? 1.0 +
+                                    sin(_planeController.value * 4 * pi) * 0.05
+                              : 1.0;
 
-                    // Flight path
-                    if (_flightPath.isNotEmpty)
-                      CustomPaint(
-                        size: Size.infinite,
-                        painter: _FlightPathPainter(
-                          points: _flightPath,
-                          color: _hasCrashed
-                              ? AppColors.danger
-                              : AppColors.success,
-                        ),
-                      ),
-
-                    // Airplane with enhanced animation
-                    AnimatedBuilder(
-                      animation: _planeController,
-                      builder: (context, child) {
-                        final wobble = _isFlying
-                            ? sin(_planeController.value * 2 * pi) * 4
-                            : 0.0;
-
-                        // Pulse scale for flying state
-                        final pulseScale = _isFlying
-                            ? 1.0 + sin(_planeController.value * 4 * pi) * 0.05
-                            : 1.0;
-
-                        return Positioned(
-                          left: _isFlying
-                              ? min(
-                                  60 + (_multiplier - 1) * 30,
-                                  MediaQuery.of(context).size.width - 100,
-                                )
-                              : 60,
-                          bottom: _hasCrashed
-                              ? 40
-                              : (80 + (_multiplier - 1) * 20 + wobble),
-                          child: Transform.scale(
-                            scale: _hasCrashed ? 1.0 : pulseScale,
-                            child: Transform.rotate(
-                              angle: _hasCrashed
-                                  ? 0.8
-                                  : (_isFlying ? -0.3 : -0.5),
-                              child: Text(
-                                _hasCrashed ? '💥' : '✈️',
-                                style: TextStyle(
-                                  fontSize: 52,
-                                  shadows: _isFlying
-                                      ? [
-                                          Shadow(
-                                            color: AppColors.success.withValues(
-                                              alpha: 0.5,
+                          return Positioned(
+                            left: _isFlying
+                                ? min(
+                                    60 + (_multiplier - 1) * 30,
+                                    MediaQuery.of(context).size.width - 100,
+                                  )
+                                : 60,
+                            bottom: _hasCrashed
+                                ? 40
+                                : (80 + (_multiplier - 1) * 20 + wobble),
+                            child: Transform.scale(
+                              scale: _hasCrashed ? 1.0 : pulseScale,
+                              child: Transform.rotate(
+                                angle: _hasCrashed
+                                    ? 0.8
+                                    : (_isFlying ? -0.3 : -0.5),
+                                child: Text(
+                                  _hasCrashed ? '💥' : '✈️',
+                                  style: TextStyle(
+                                    fontSize: 52,
+                                    shadows: _isFlying
+                                        ? [
+                                            Shadow(
+                                              color: AppColors.success
+                                                  .withValues(alpha: 0.5),
+                                              blurRadius: 20,
                                             ),
-                                            blurRadius: 20,
-                                          ),
-                                        ]
-                                      : null,
+                                          ]
+                                        : null,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        },
+                      ),
 
-                    // Crashed overlay with animation
-                    if (_hasCrashed)
-                      Center(
-                        child: TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.0, end: 1.0),
-                          duration: const Duration(milliseconds: 500),
-                          curve: Curves.elasticOut,
-                          builder: (context, value, child) {
-                            return Transform.scale(
-                              scale: value.clamp(0.0, 1.0),
-                              child: child,
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 20,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.danger.withValues(alpha: 0.95),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.danger.withValues(
-                                    alpha: 0.5,
+                      // Crashed overlay with animation
+                      if (_hasCrashed)
+                        Center(
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.elasticOut,
+                            builder: (context, value, child) {
+                              return Transform.scale(
+                                scale: value.clamp(0.0, 1.0),
+                                child: child,
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 20,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.danger.withValues(alpha: 0.95),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.danger.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                    blurRadius: 30,
+                                    spreadRadius: 5,
                                   ),
-                                  blurRadius: 30,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  '💥 CRASHED!',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    '💥 CRASHED!',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Flew away at ${_crashPoint.toStringAsFixed(2)}x',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    fontSize: 16,
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Flew away at ${_crashPoint.toStringAsFixed(2)}x',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                      fontSize: 16,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '-\$$_betAmount',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '-\$$_betAmount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
 
-                    // Cashed out overlay with animation
-                    if (_hasCashedOut)
-                      Center(
-                        child: TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.0, end: 1.0),
-                          duration: const Duration(milliseconds: 500),
-                          curve: Curves.elasticOut,
-                          builder: (context, value, child) {
-                            return Transform.scale(
-                              scale: value.clamp(0.0, 1.0),
-                              child: child,
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 20,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.success.withValues(alpha: 0.95),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.success.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  blurRadius: 30,
-                                  spreadRadius: 5,
+                      // Cashed out overlay with animation
+                      if (_hasCashedOut)
+                        Center(
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.elasticOut,
+                            builder: (context, value, child) {
+                              return Transform.scale(
+                                scale: value.clamp(0.0, 1.0),
+                                child: child,
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 20,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.success.withValues(
+                                  alpha: 0.95,
                                 ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  '🎉 CASHED OUT!',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.success.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                    blurRadius: 30,
+                                    spreadRadius: 5,
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '+\$$_winAmount',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    '🎉 CASHED OUT!',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'at ${_multiplier.toStringAsFixed(2)}x',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    fontSize: 14,
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '+\$$_winAmount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'at ${_multiplier.toStringAsFixed(2)}x',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
 
-                    // Waiting message
-                    if (!_isFlying && !_showResult)
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TweenAnimationBuilder<double>(
-                              tween: Tween(begin: 0.0, end: 1.0),
-                              duration: const Duration(milliseconds: 2000),
-                              builder: (context, value, child) {
-                                return Transform.translate(
-                                  offset: Offset(0, sin(value * 2 * pi) * 8),
-                                  child: child,
-                                );
-                              },
-                              child: Text(
-                                '✈️',
+                      // Waiting message
+                      if (!_isFlying && !_showResult)
+                        Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 0.0, end: 1.0),
+                                duration: const Duration(milliseconds: 2000),
+                                builder: (context, value, child) {
+                                  return Transform.translate(
+                                    offset: Offset(0, sin(value * 2 * pi) * 8),
+                                    child: child,
+                                  );
+                                },
+                                child: Text(
+                                  '✈️',
+                                  style: TextStyle(
+                                    fontSize: 64,
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Place bet and take off!',
                                 style: TextStyle(
-                                  fontSize: 64,
-                                  color: Colors.white.withValues(alpha: 0.4),
+                                  color: AppColors.textMuted,
+                                  fontSize: 16,
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Place bet and take off!',
-                              style: TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Action buttons with new GameButton
-            if (_showResult)
-              GameButton(
-                text: 'PLAY AGAIN',
-                icon: Icons.replay,
-                color: AppColors.info,
-                onPressed: _playAgain,
-              )
-            else if (_isFlying)
-              _CashOutButton(potentialWin: potentialWin, onPressed: _cashOut)
-            else
-              GameButton(
-                text: 'TAKE OFF',
-                icon: Icons.flight_takeoff,
-                color: AppColors.happiness,
-                enabled: canPlay,
-                onPressed: _startFlight,
-              ),
-          ],
+              // Action buttons with new GameButton
+              if (_showResult)
+                GameButton(
+                  text: 'PLAY AGAIN',
+                  icon: Icons.replay,
+                  color: AppColors.info,
+                  onPressed: _playAgain,
+                )
+              else if (_isFlying)
+                _CashOutButton(potentialWin: potentialWin, onPressed: _cashOut)
+              else
+                GameButton(
+                  text: 'TAKE OFF',
+                  icon: Icons.flight_takeoff,
+                  color: AppColors.happiness,
+                  enabled: canPlay,
+                  onPressed: _startFlight,
+                ),
+            ],
+          ),
         ),
       ),
     );

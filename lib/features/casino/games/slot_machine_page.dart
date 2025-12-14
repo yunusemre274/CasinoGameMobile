@@ -179,6 +179,7 @@ class _SlotMachinePageState extends ConsumerState<SlotMachinePage>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         leading: IconButton(
@@ -206,150 +207,157 @@ class _SlotMachinePageState extends ConsumerState<SlotMachinePage>
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Bet amount selector
-            BetSelector(
-              presets: _betPresets,
-              currentBet: _betAmount,
-              playerMoney: gameState.money,
-              isDisabled: _isSpinning,
-              onSelect: _selectBet,
-            ),
-            const SizedBox(height: 16),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Bet amount selector
+              BetSelector(
+                presets: _betPresets,
+                currentBet: _betAmount,
+                playerMoney: gameState.money,
+                isDisabled: _isSpinning,
+                onSelect: _selectBet,
+              ),
+              const SizedBox(height: 16),
 
-            // Slot machine
-            Expanded(
-              child: GameArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Jackpot display
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.9, end: 1.0),
-                      duration: const Duration(milliseconds: 1500),
-                      curve: Curves.easeInOut,
-                      builder: (context, value, child) {
-                        return Transform.scale(
-                          scale: _isSpinning ? (0.95 + (value * 0.1)) : 1.0,
-                          child: child,
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 8,
+              // Slot machine
+              Expanded(
+                child: GameArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Jackpot display
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.9, end: 1.0),
+                        duration: const Duration(milliseconds: 1500),
+                        curve: Curves.easeInOut,
+                        builder: (context, value, child) {
+                          return Transform.scale(
+                            scale: _isSpinning ? (0.95 + (value * 0.1)) : 1.0,
+                            child: child,
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.money,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.money.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('💰', style: TextStyle(fontSize: 20)),
+                              const SizedBox(width: 8),
+                              Text(
+                                'JACKPOT: \$${_betAmount * 50}',
+                                style: TextStyle(
+                                  color: AppColors.money,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('💰', style: TextStyle(fontSize: 20)),
+                            ],
+                          ),
                         ),
+                      ),
+                      const SizedBox(height: 32),
+                      const SizedBox(height: 32),
+
+                      // Reels with enhanced visuals
+                      Container(
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.money, width: 2),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.level.withValues(alpha: 0.5),
+                            width: 3,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.money.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              spreadRadius: 1,
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('💰', style: TextStyle(fontSize: 20)),
-                            const SizedBox(width: 8),
-                            Text(
-                              'JACKPOT: \$${_betAmount * 50}',
-                              style: TextStyle(
-                                color: AppColors.money,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(3, (index) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text('💰', style: TextStyle(fontSize: 20)),
-                          ],
+                              child: _SlotReel(
+                                animation: _reelAnimations[index],
+                                resultIndex: _reelResults[index],
+                                symbols: _symbols,
+                                isSpinning: _isSpinning,
+                                reelIndex: index,
+                              ),
+                            );
+                          }),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 32),
-                    const SizedBox(height: 32),
+                      const SizedBox(height: 32),
 
-                    // Reels with enhanced visuals
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.level.withValues(alpha: 0.5),
-                          width: 3,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
+                      // Result message
+                      if (_showResult)
+                        ResultCard(
+                          isWin: _winAmount > 0,
+                          title: _winAmount > 0
+                              ? '🎉 ${_slotResult?.winType ?? 'WIN'}!'
+                              : '😢 NO LUCK',
+                          amount: _winAmount > 0
+                              ? '+\$$_winAmount'
+                              : '-\$$_betAmount',
+                          onPlayAgain: _playAgain,
+                        )
+                      else if (!_isSpinning)
+                        Text(
+                          'Match 3 symbols to win!',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(3, (index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: _SlotReel(
-                              animation: _reelAnimations[index],
-                              resultIndex: _reelResults[index],
-                              symbols: _symbols,
-                              isSpinning: _isSpinning,
-                              reelIndex: index,
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Result message
-                    if (_showResult)
-                      ResultCard(
-                        isWin: _winAmount > 0,
-                        title: _winAmount > 0
-                            ? '🎉 ${_slotResult?.winType ?? 'WIN'}!'
-                            : '😢 NO LUCK',
-                        amount: _winAmount > 0
-                            ? '+\$$_winAmount'
-                            : '-\$$_betAmount',
-                        onPlayAgain: _playAgain,
-                      )
-                    else if (!_isSpinning)
-                      Text(
-                        'Match 3 symbols to win!',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Spin button
-            GameButton(
-              text: _isSpinning ? 'SPINNING...' : 'SPIN',
-              icon: _isSpinning ? Icons.hourglass_top : Icons.rotate_right,
-              color: AppColors.level,
-              enabled: canPlay && !_showResult,
-              isLoading: _isSpinning,
-              onPressed: _spin,
-            ),
-          ],
+              // Spin button
+              GameButton(
+                text: _isSpinning ? 'SPINNING...' : 'SPIN',
+                icon: _isSpinning ? Icons.hourglass_top : Icons.rotate_right,
+                color: AppColors.level,
+                enabled: canPlay && !_showResult,
+                isLoading: _isSpinning,
+                onPressed: _spin,
+              ),
+            ],
+          ),
         ),
       ),
     );

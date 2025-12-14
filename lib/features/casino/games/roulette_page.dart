@@ -229,6 +229,7 @@ class _RoulettePageState extends ConsumerState<RoulettePage>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         leading: IconButton(
@@ -256,208 +257,212 @@ class _RoulettePageState extends ConsumerState<RoulettePage>
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Bet amount selector
-            BetSelector(
-              presets: _betPresets,
-              currentBet: _betAmount,
-              playerMoney: gameState.money,
-              isDisabled: _isSpinning,
-              onSelect: _selectBetAmount,
-            ),
-            const SizedBox(height: 16),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Bet amount selector
+              BetSelector(
+                presets: _betPresets,
+                currentBet: _betAmount,
+                playerMoney: gameState.money,
+                isDisabled: _isSpinning,
+                onSelect: _selectBetAmount,
+              ),
+              const SizedBox(height: 16),
 
-            // Wheel area
-            Expanded(
-              child: GameArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Pointer with glow effect
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.danger.withValues(alpha: 0.5),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        '▼',
-                        style: TextStyle(
-                          fontSize: 32,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
+              // Wheel area
+              Expanded(
+                child: GameArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Pointer with glow effect
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.danger.withValues(alpha: 0.5),
+                              blurRadius: 10,
+                              spreadRadius: 2,
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Animated wheel with enhanced visuals
-                    AnimatedBuilder(
-                      animation: _spinController,
-                      builder: (context, child) {
-                        final angle = _isSpinning
-                            ? _spinAnimation.value
-                            : _currentAngle;
-
-                        // Add shake effect at very slow speeds (near end)
-                        final progress = _spinController.value;
-                        final isNearEnd = progress > 0.85;
-                        final shakeOffset = isNearEnd
-                            ? sin(progress * 80) * (1 - progress) * 3
-                            : 0.0;
-
-                        return Transform.translate(
-                          offset: Offset(shakeOffset, 0),
-                          child: Transform.rotate(
-                            angle: angle,
-                            child: Container(
-                              width: 220,
-                              height: 220,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.money,
-                                  width: 5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.money.withValues(
-                                      alpha: 0.4,
-                                    ),
-                                    blurRadius: 25,
-                                    spreadRadius: 3,
-                                  ),
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.5),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
+                        child: const Text(
+                          '▼',
+                          style: TextStyle(
+                            fontSize: 32,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
                               ),
-                              child: ClipOval(
-                                child: CustomPaint(
-                                  size: const Size(220, 220),
-                                  painter: _RouletteWheelPainter(
-                                    numbers: _wheelNumbers,
-                                    getColor: _getNumberColor,
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Animated wheel with enhanced visuals
+                      AnimatedBuilder(
+                        animation: _spinController,
+                        builder: (context, child) {
+                          final angle = _isSpinning
+                              ? _spinAnimation.value
+                              : _currentAngle;
+
+                          // Add shake effect at very slow speeds (near end)
+                          final progress = _spinController.value;
+                          final isNearEnd = progress > 0.85;
+                          final shakeOffset = isNearEnd
+                              ? sin(progress * 80) * (1 - progress) * 3
+                              : 0.0;
+
+                          return Transform.translate(
+                            offset: Offset(shakeOffset, 0),
+                            child: Transform.rotate(
+                              angle: angle,
+                              child: Container(
+                                width: 220,
+                                height: 220,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.money,
+                                    width: 5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.money.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                      blurRadius: 25,
+                                      spreadRadius: 3,
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipOval(
+                                  child: CustomPaint(
+                                    size: const Size(220, 220),
+                                    painter: _RouletteWheelPainter(
+                                      numbers: _wheelNumbers,
+                                      getColor: _getNumberColor,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Result message
-                    if (_showResult)
-                      _RouletteResultCard(
-                        resultNumber: _resultNumber!,
-                        resultColor: _resultColor!,
-                        isWin: _winAmount > 0,
-                        winAmount: _winAmount,
-                        betAmount: _betAmount,
-                        onPlayAgain: _playAgain,
-                      )
-                    else if (!_isSpinning)
-                      Text(
-                        _betType == null
-                            ? 'Place your bet on a color'
-                            : 'Tap SPIN to play!',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                        ),
+                          );
+                        },
                       ),
+                      const SizedBox(height: 24),
+
+                      // Result message
+                      if (_showResult)
+                        _RouletteResultCard(
+                          resultNumber: _resultNumber!,
+                          resultColor: _resultColor!,
+                          isWin: _winAmount > 0,
+                          winAmount: _winAmount,
+                          betAmount: _betAmount,
+                          onPlayAgain: _playAgain,
+                        )
+                      else if (!_isSpinning)
+                        Text(
+                          _betType == null
+                              ? 'Place your bet on a color'
+                              : 'Tap SPIN to play!',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Betting chips
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'BET ON COLOR',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _BetChip(
+                          color: Colors.red,
+                          label: 'Red',
+                          payout: '2x',
+                          isSelected: _betType == RouletteBetType.red,
+                          isDisabled: _isSpinning || _showResult,
+                          onTap: () => _selectBet(RouletteBetType.red),
+                        ),
+                        _BetChip(
+                          color: Colors.black87,
+                          label: 'Black',
+                          payout: '2x',
+                          isSelected: _betType == RouletteBetType.black,
+                          isDisabled: _isSpinning || _showResult,
+                          onTap: () => _selectBet(RouletteBetType.black),
+                        ),
+                        _BetChip(
+                          color: Colors.green,
+                          label: '0',
+                          payout: '36x',
+                          isSelected: _betType == RouletteBetType.single,
+                          isDisabled: _isSpinning || _showResult,
+                          onTap: () => _selectBet(RouletteBetType.single),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Betting chips
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
+              // Spin button
+              GameButton(
+                text: _isSpinning ? 'SPINNING...' : 'SPIN',
+                icon: Icons.refresh,
+                color: AppColors.danger,
+                enabled: canPlay && !_showResult,
+                isLoading: _isSpinning,
+                onPressed: _spin,
+                disabledReason: _betType == null ? 'Select a bet first!' : null,
               ),
-              child: Column(
-                children: [
-                  Text(
-                    'BET ON COLOR',
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _BetChip(
-                        color: Colors.red,
-                        label: 'Red',
-                        payout: '2x',
-                        isSelected: _betType == RouletteBetType.red,
-                        isDisabled: _isSpinning || _showResult,
-                        onTap: () => _selectBet(RouletteBetType.red),
-                      ),
-                      _BetChip(
-                        color: Colors.black87,
-                        label: 'Black',
-                        payout: '2x',
-                        isSelected: _betType == RouletteBetType.black,
-                        isDisabled: _isSpinning || _showResult,
-                        onTap: () => _selectBet(RouletteBetType.black),
-                      ),
-                      _BetChip(
-                        color: Colors.green,
-                        label: '0',
-                        payout: '36x',
-                        isSelected: _betType == RouletteBetType.single,
-                        isDisabled: _isSpinning || _showResult,
-                        onTap: () => _selectBet(RouletteBetType.single),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Spin button
-            GameButton(
-              text: _isSpinning ? 'SPINNING...' : 'SPIN',
-              icon: Icons.refresh,
-              color: AppColors.danger,
-              enabled: canPlay && !_showResult,
-              isLoading: _isSpinning,
-              onPressed: _spin,
-              disabledReason: _betType == null ? 'Select a bet first!' : null,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
